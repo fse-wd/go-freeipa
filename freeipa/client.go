@@ -108,8 +108,7 @@ func Connect(host string, tspt http.RoundTripper, user, pw string) (*Client, err
 			Transport: tspt,
 			Jar:       jar,
 		},
-		user: user,
-		pw:   pw,
+		body: body,
 	}
 	if e := c.login(); e != nil {
 		return nil, errors.WithMessage(e, "initial login failed")
@@ -187,10 +186,7 @@ func (c *Client) login() error {
 		return c.loginWithKerberos()
 	}
 
-	data := url.Values{
-		"user":     []string{c.user},
-		"password": []string{c.pw},
-	}
+	res, e := myPostForm(c.hc, c.host, c.body)
 
 	req, e := http.NewRequest(http.MethodPost, fmt.Sprintf("https://%v/ipa/session/login_password", c.host), strings.NewReader(data.Encode()))
 	if e != nil {
@@ -237,6 +233,19 @@ func (c *Client) loginWithKerberos() error {
 	}
 
 	return nil
+}
+
+func myPostForm(c *http.Client, host string, body io.Reader) (resp *http.Response, err error) {
+	contentType := "application/x-www-form-urlencoded"
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("https://%v/ipa/session/login_password", host), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Referer", fmt.Sprintf("https://%v/ipa/", host))
+	return c.Do(req)
 }
 
 func (c *Client) sendRequest(req *request) (*http.Response, error) {
