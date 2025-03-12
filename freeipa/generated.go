@@ -8823,7 +8823,7 @@ The primary_key value of the entry, e.g. 'jdoe' for a user
     (required)
     */
     
-    Value int `json:"value,omitempty"`
+    Value *string `json:"value,omitempty"`
     
   }
 
